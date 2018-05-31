@@ -14,7 +14,7 @@
     """,
     'website': "web-builds.com",
     'category': 'Currency',
-    'version': '1.0',
+    'version': '1.1',
     'depends': ['base','account'],
     'data': [
         'views/crc_currency_rate_view.xml',
