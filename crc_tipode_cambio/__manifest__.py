@@ -2,9 +2,8 @@
 {
     'name': "Costa Rica Tipo de Cambio",
     'author': "Jimmy Cruz - jimmycruzv@gmail.com",
-    'summary': """
-        Actualiza el tipo de cambio de
-        venta automáticamente""",
+    'summary': """ Módulo diseñado y creado por Jimmy Cruz 
+            para Global Account Systems LTDA""",
 
     'description': """
         Este módulo consume el servicio web del 

@@ -47,7 +47,8 @@ class crc_currency_rate(models.Model):
                     sql_param_rate = float(child.text)
                     if rate_date == rate_name : 
                         rec.env.cr.execute("UPDATE res_currency_rate SET rate = %s WHERE id = %s;",(sql_param_rate,rate_id))
-                        _logger.info('Botón actualizar presionado query: UPDATE res_currency_rate SET rate = %s WHERE id = %s;',sql_param_rate,rate_id)
+                        _logger.info('Moneda CRC actualizada, botón actualizar, método write, valor: %s', sql_param_rate)
+                        #_logger.info('Botón actualizar presionado query: UPDATE res_currency_rate SET rate = %s WHERE id = %s;',sql_param_rate,rate_id)
                         break
                     else:  
                         vals = {
