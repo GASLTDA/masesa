@@ -86,6 +86,8 @@ class AccountInvoice(models.Model):
         for id in ids:
             if id.company_id.electronic_invoice:
                 if id.type in ('out_refund','out_invoice'):
+                    id.response = ''
+                    id.response_xml = ''
                     id.generate_xml_file(cron=True)
                     id.submit_tries = id.submit_tries+1
 
@@ -96,6 +98,8 @@ class AccountInvoice(models.Model):
         for id in ids:
             if id.company_id.electronic_invoice:
                 if id.type in ('out_refund','out_invoice'):
+                    id.response = ''
+                    id.response_xml = ''
                     id.check_status(True)
                     id.status_tries = id.status_tries+1
 
@@ -113,11 +117,10 @@ class AccountInvoice(models.Model):
             try:
                 res = json.loads(res.content.decode())
                 message = res['message'].strip('\n')
-
+                id.response = res
                 message = json.loads(message)
                 if 'ind-estado' in message:
                     id.haicenda_status = message['ind-estado']
-                    id.response = res
                 if 'respuesta-xml' in message:
                     id.response_xml = base64.b64decode(message['respuesta-xml'])
                 if 'fecha' in message:
@@ -196,6 +199,7 @@ class AccountInvoice(models.Model):
         TotalDescuentos = 0.0
         for active_id in active_ids:
             id = active_id
+            round_curr = id.currency_id.round
 
             invoice_dict = ''
             if id.type not in ('in_refund', 'out_invoice', 'out_refund'):
@@ -292,7 +296,7 @@ class AccountInvoice(models.Model):
                     line_total_without_dis = line.quantity * line.price_unit
                     discount_txt = line_total_without_dis * (line.discount / 100)
                     TotalDescuentos += discount_txt
-                    LineaDetalle += '[MontoDescuento]' + str(discount_txt) + '[|MontoDescuento]'
+                    LineaDetalle += '[MontoDescuento]' + str(round_curr(discount_txt)) + '[|MontoDescuento]'
                     nature_of_discount = ''
                     nature_of_discount = 'porcentaje'
                     LineaDetalle += '[NaturalezaDescuento]' + str(nature_of_discount) + '[|NaturalezaDescuento]'
@@ -302,12 +306,12 @@ class AccountInvoice(models.Model):
 
                     for tax_ids in line.invoice_line_tax_ids:
                         LineaDetalle += '[Codigo]' + tax_ids.tax_code + '[|Codigo]'
-                        LineaDetalle += '[Tarifa]' + str(format(tax_ids.amount, '.5f')) + '[|Tarifa]'
+                        LineaDetalle += '[Tarifa]' + str(format(round_curr(tax_ids.amount), '.5f')) + '[|Tarifa]'
                         product_amount = line.quantity * line.price_unit
                         product_amount_after_discount = product_amount - (
                             product_amount * (line.discount / 100))
                         LineaDetalle += '[Monto]' + str(
-                            '%023.5f' % (product_amount_after_discount * (tax_ids.amount / 100))) + '[|Monto]'
+                            '%023.5f' % round_curr(product_amount_after_discount * (tax_ids.amount / 100))) + '[|Monto]'
 
                         if tax_ids.tax_code in ('08', '09', '10', '11', '99'):
                             LineaDetalle += '[Exoneracion]'
