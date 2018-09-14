@@ -325,7 +325,7 @@ class AccountInvoice(models.Model):
                     line.product_id.default_code or '000') + '[|Codigo][|Codigo]'
                 LineaDetalle += '[Cantidad]' + str('%016.3F' % line.quantity) + '[|Cantidad]'
                 LineaDetalle += '[UnidadMedida]' + str(line.uom_id.code or 'Unid') + '[|UnidadMedida]'
-                LineaDetalle += '[Detalle]' + str(line.name).strip('\n').replace('[','(').replace(']',')').replace('|','') + '[|Detalle]'
+                LineaDetalle += '[Detalle]' + str(line.name).strip('\n').replace('[','(').replace(']',')').replace('|','')[:160] + '[|Detalle]'
                 LineaDetalle += '[PrecioUnitario]' + str('%023.5f' % line.price_unit) + '[|PrecioUnitario]'
                 LineaDetalle += '[MontoTotal]' + str('%023.5f' % (line.quantity * line.price_unit)) + '[|MontoTotal]'
 
