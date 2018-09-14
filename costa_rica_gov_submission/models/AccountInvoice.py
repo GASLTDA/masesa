@@ -416,7 +416,7 @@ class AccountInvoice(models.Model):
             TotalVenta = TotalGravado + TotalExento
             TotalVentaNeta = TotalVenta - TotalDescuentos
             ResumenFactura = '[ResumenFactura][CodigoMoneda]' + id.currency_id.name + '[|CodigoMoneda]'
-            ResumenFactura += '[TipoCambio]' + str(id.currency_id.rate) + '[|TipoCambio]'
+            ResumenFactura += '[TipoCambio]' + str('%023.5f' % id.currency_id.rate) + '[|TipoCambio]'
             ResumenFactura += '[TotalServGravados]' + str('%023.5f' % TotalServGravados) + '[|TotalServGravados]'
             ResumenFactura += '[TotalServExentos]' + str('%023.5f' % TotalServExentos) + '[|TotalServExentos]'
             ResumenFactura += '[TotalMercanciasGravadas]' + str(
