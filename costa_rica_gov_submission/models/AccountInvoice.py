@@ -19,24 +19,26 @@ class AccountInvoice(models.Model):
     _inherit = 'account.invoice'
 
     def _show_button(self):
-        if self.type in ('out_invoice', 'out_refund') and self.company_id.electronic_invoice:
-            if (self.state == 'open' or self.state == 'paid') and self.haicenda_status in (
-            'procesando', 'rechazado', 'aceptación parcial'):
-                self.show_button = True
+        for id in self:
+            if id.type in ('out_invoice', 'out_refund') and id.company_id.electronic_invoice:
+                if (id.state == 'open' or id.state == 'paid') and id.haicenda_status in (
+                        'procesando', 'rechazado', 'aceptación parcial'):
+                    id.show_button = True
+                else:
+                    id.show_button = False
             else:
-                self.show_button = False
-        else:
-            self.show_button = False
+                id.show_button = False
 
     def _show_submit_button(self):
-        if self.type in ('out_invoice', 'out_refund') and self.company_id.electronic_invoice:
-            if (self.state == 'open' or self.state == 'paid') and self.haicenda_status in (
-            'rechazado', 'aceptación parcial'):
-                self.show_submit_button = True
+        for id in self:
+            if id.type in ('out_invoice', 'out_refund') and id.company_id.electronic_invoice:
+                if (id.state == 'open' or id.state == 'paid') and id.haicenda_status in (
+                        'rechazado', 'aceptación parcial'):
+                    id.show_submit_button = True
+                else:
+                    id.show_submit_button = False
             else:
-                self.show_submit_button = False
-        else:
-            self.show_submit_button = False
+                id.show_submit_button = False
 
     clave_numerica = fields.Char(_('Clave Numerica'), copy=False)
 
