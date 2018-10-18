@@ -22,7 +22,7 @@ class AccountInvoice(models.Model):
         for id in self:
             if id.type in ('out_invoice', 'out_refund') and id.company_id.electronic_invoice:
                 if (id.state == 'open' or id.state == 'paid') and id.haicenda_status in (
-                        'procesando', 'rechazado', 'aceptación parcial'):
+                'procesando', 'rechazado', 'aceptación parcial'):
                     id.show_button = True
                 else:
                     id.show_button = False
@@ -33,12 +33,13 @@ class AccountInvoice(models.Model):
         for id in self:
             if id.type in ('out_invoice', 'out_refund') and id.company_id.electronic_invoice:
                 if (id.state == 'open' or id.state == 'paid') and id.haicenda_status in (
-                        'rechazado', 'aceptación parcial'):
+                'rechazado', 'aceptación parcial'):
                     id.show_submit_button = True
                 else:
                     id.show_submit_button = False
             else:
                 id.show_submit_button = False
+
 
     clave_numerica = fields.Char(_('Clave Numerica'), copy=False)
 
@@ -72,6 +73,7 @@ class AccountInvoice(models.Model):
 
     terminal = fields.Many2one('terminal')
     xml_file = fields.Binary(copy=False)
+    response_file = fields.Binary(copy=False)
     submit_tries = fields.Integer(default=0)
     status_tries = fields.Integer(default=0)
     electronic_invoice = fields.Boolean(related='company_id.electronic_invoice')
@@ -201,6 +203,18 @@ class AccountInvoice(models.Model):
                 raise UserError(_('Algo salió mal, intente de nuevo más tarde'))
             else:
                 pass
+
+    @api.multi
+    def download_response(self):
+        for id in self:
+            id.response_file = base64.b64encode(str(id.response_xml).encode())
+            return {
+                'name': 'Report',
+                'type': 'ir.actions.act_url',
+                'url': "web/content/?model=" + self._name +"&id=" + str(
+                    id.id) + "&filename_field=file_name&field=response_file&download=true&filename=" + id.clave_numerica +'_response.xml',
+                'target': 'self',
+            }
 
     @api.multi
     def download_xml(self):
@@ -336,7 +350,7 @@ class AccountInvoice(models.Model):
                     line_total_without_dis = line.quantity * line.price_unit
                     discount_txt = line_total_without_dis * (line.discount / 100)
                     TotalDescuentos += discount_txt
-                    LineaDetalle += '[MontoDescuento]' + str(round_curr(discount_txt)) + '[|MontoDescuento]'
+                    LineaDetalle += '[MontoDescuento]' + str(format(round_curr(discount_txt),'.5f')) + '[|MontoDescuento]'
                     nature_of_discount = ''
                     nature_of_discount = 'porcentaje'
                     LineaDetalle += '[NaturalezaDescuento]' + str(nature_of_discount) + '[|NaturalezaDescuento]'
@@ -351,7 +365,7 @@ class AccountInvoice(models.Model):
                         product_amount_after_discount = product_amount - (
                             product_amount * (line.discount / 100))
                         LineaDetalle += '[Monto]' + str(
-                            '%023.5f' % round_curr(product_amount_after_discount * (tax_ids.amount / 100))) + '[|Monto]'
+                            '%023.5f' % (product_amount_after_discount * (tax_ids.amount / 100))) + '[|Monto]'
 
                         if tax_ids.tax_code in ('08', '09', '10', '11', '99'):
                             LineaDetalle += '[Exoneracion]'
@@ -462,6 +476,8 @@ class AccountInvoice(models.Model):
             id.clave_numerica = Clave
 
             try:
+
+                print(id.company_id.url + '/api/hacienda')
                 res = requests.post(id.company_id.url + '/api/hacienda', {
                     'data': base64.b64encode(invoice_dict.encode()),
                     'key': id.company_id.access_token,
