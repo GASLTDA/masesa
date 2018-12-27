@@ -131,15 +131,14 @@ class AccountInvoice(models.Model):
 
     @api.multi
     def _auto_status_check(self):
-        ids = self.env['account.invoice'].search([('haicenda_status','=','procesando'),('state','not in',('draft','cancel')),('status_tries','<=','10')])
+        ids = self.env['account.invoice'].search([('haicenda_status','=','procesando'),('state','not in',('draft','cancel')),('status_tries','<=','10'),('type','in',('out_refund','out_invoice'))])
 
         for id in ids:
             if id.company_id.electronic_invoice:
-                if id.type in ('out_refund','out_invoice'):
-                    id.response = ''
-                    id.response_xml = ''
-                    id.check_status(True)
-                    id.status_tries = id.status_tries+1
+                id.response = ''
+                id.response_xml = ''
+                id.check_status(True)
+                id.status_tries = id.status_tries+1
 
     @api.multi
     def check_status(self, cron = False):
@@ -313,7 +312,14 @@ class AccountInvoice(models.Model):
             invoice_dict += Emisor
 
             Receptor = '[Receptor][Nombre]' + id.partner_id.name + '[|Nombre]'
-            Receptor += '[Identificacion][Tipo]' + id.partner_id.tipo + '[|Tipo][Numero]' + str(id.partner_id.vat).replace('-','').replace(' ','') + '[|Numero][|Identificacion]'
+            if id.partner_id.tipo =='IdentificacionExtranjero':
+               Receptor +='['+id.partner_id.tipo+']' + str(id.partner_id.vat).replace('-','').replace(' ','') + '[|'+id.partner_id.tipo+']'
+            else:
+                Receptor += '[Identificacion]'
+                Receptor +='[Tipo]' + id.partner_id.tipo + '[|Tipo][Numero]' + str(id.partner_id.vat).replace('-','').replace(' ','') + '[|Numero]'
+
+                Receptor +='[|Identificacion]'
+
             if id.partner_id.province_id and id.partner_id.canton_id and id.partner_id.district_id and id.partner_id.locality_id:
                 Receptor += '[Ubicacion]'
                 Receptor += '[Provincia]' + self._get_string(id.partner_id.province_id.code) + '[|Provincia]'
@@ -451,7 +457,9 @@ class AccountInvoice(models.Model):
             ResumenFactura += '[TotalVenta]' + str('%023.5f' % TotalVenta) + '[|TotalVenta]'
             ResumenFactura += '[TotalDescuentos]' + str('%023.5f' % TotalDescuentos) + '[|TotalDescuentos]'
             ResumenFactura += '[TotalVentaNeta]' + str('%023.5f' % (TotalVentaNeta )) + '[|TotalVentaNeta]'
+
             ResumenFactura += '[TotalImpuesto]' + str('%023.5f' % TotalImpuesto) + '[|TotalImpuesto]'
+
             ResumenFactura += '[TotalComprobante]' + str('%023.5f' % (TotalVentaNeta + TotalImpuesto )) + '[|TotalComprobante]'
             ResumenFactura += '[|ResumenFactura]'
 
@@ -558,8 +566,8 @@ class AccountInvoice(models.Model):
                 return {'value': {'xml_supplier_approval': False},'warning': {'title': 'Atención','message': 'El archivo xml no contiene el nodo Tipo. Por favor cargue un archivo con el formato correcto.'}}
             if not root.findall('Emisor')[0].findall('Identificacion')[0].findall('Numero'):
                 return {'value': {'xml_supplier_approval': False},'warning': {'title': 'Atención','message': 'El archivo xml no contiene el nodo Numero. Por favor cargue un archivo con el formato correcto.'}}
-            if not (root.findall('ResumenFactura') and root.findall('ResumenFactura')[0].findall('TotalImpuesto')):
-                return {'value': {'xml_supplier_approval': False},'warning': {'title': 'Atención','message': 'No se puede localizar el nodo TotalImpuesto. Por favor cargue un archivo con el formato correcto.'}}
+            # if not (root.findall('ResumenFactura') and root.findall('ResumenFactura')[0].findall('TotalImpuesto')):
+            #     return {'value': {'xml_supplier_approval': False},'warning': {'title': 'Atención','message': 'No se puede localizar el nodo TotalImpuesto. Por favor cargue un archivo con el formato correcto.'}}
             if not (root.findall('ResumenFactura') and root.findall('ResumenFactura')[0].findall('TotalComprobante')):
                 return {'value': {'xml_supplier_approval': False},'warning': {'title': 'Atención','message': 'No se puede localizar el nodo TotalComprobante. Por favor cargue un archivo con el formato correcto.'}}
 
@@ -575,6 +583,16 @@ class AccountInvoice(models.Model):
             else:
                 raise UserError('El proveedor con identificación '+root.findall('Emisor')[0].find('Identificacion')[1].text+' no existe. Por favor creelo primero en el sistema.')
 
+    @api.multi
+    def _auto_status_check_supplier(self):
+        ids = self.env['account.invoice'].search([('haicenda_status','=','procesando'),('type','=','in_invoice'),('state','not in',('draft','cancel'))])
+
+        for id in ids:
+            if id.company_id.electronic_invoice:
+                id.response = ''
+                id.response_xml = ''
+                id.send_xml()
+                # id.status_tries = id.status_tries+1
 
     @api.multi
     def send_xml(self):
@@ -603,7 +621,11 @@ class AccountInvoice(models.Model):
                         invoice_dict += '[FechaEmisionDoc]' + root.findall('FechaEmision')[0].text + '[|FechaEmisionDoc]'
                         invoice_dict += '[Mensaje]' +  id.state_invoice_partner + '[|Mensaje]'
                         invoice_dict += '[DetalleMensaje]' +  detalle_mensaje + '[|DetalleMensaje]'
-                        invoice_dict += '[MontoTotalImpuesto]' +  root.findall('ResumenFactura')[0].findall('TotalImpuesto')[0].text + '[|MontoTotalImpuesto]'
+                        if len(root.findall('ResumenFactura')[0].findall('TotalImpuesto')) > 0:
+                            invoice_dict += '[MontoTotalImpuesto]' +  root.findall('ResumenFactura')[0].findall('TotalImpuesto')[0].text + '[|MontoTotalImpuesto]'
+                        else:
+                            invoice_dict += '[MontoTotalImpuesto]' +'0.0'+ '[|MontoTotalImpuesto]'
+
                         invoice_dict += '[TotalFactura]' +  root.findall('ResumenFactura')[0].findall('TotalComprobante')[0].text + '[|TotalFactura]'
                         invoice_dict += '[NumeroCedulaReceptor]' +  str(root.findall('Receptor')[0].findall('Identificacion')[0].findall('Numero')[0].text).zfill(12) + '[|NumeroCedulaReceptor]'
                         invoice_dict += '[NumeroConsecutivoReceptor]' +   NumeroConsecutivo + '[|NumeroConsecutivoReceptor]'
@@ -803,8 +825,6 @@ class AccountInvoice(models.Model):
             value = datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S.%f')
         date_time = datetime.datetime.strptime(value.strftime(format), format) - datetime.timedelta(hours=6)
         return date_time.strftime(format) + '-06:00'
-
-
 
     state_invoice_partner = fields.Selection([('1', 'Aceptado'), ('3', 'Rechazado'), ('2', 'Aceptacion parcial')], 'Respuesta del Cliente')
     xml_supplier_approval = fields.Binary(string="XML Proveedor", required=False, copy=False, attachment=True)
