@@ -1,0 +1,15 @@
+<data>
+    <record id="account_invoice_inherit_form" model="ir.ui.view">
+        <field name="name">account.invoice.form.inherit</field>
+        <field name="model">account.invoice</field>
+        <field name="inherit_id" ref="costa_rica_gov_submission.account_invoice_inherit_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//button[@name='action_invoice_open']" position="after">
+                <field name="email_sent" invisible="1"/>
+                 <button name="auto_email" type="object" string="Email XML" class="oe_highlight o_invoice_validate"
+                        attrs="{'invisible': [('haicenda_status','!=','aceptado'),('email_sent','!=',True)]}"/>
+            </xpath>
+        </field>
+    </record>
+</data>
