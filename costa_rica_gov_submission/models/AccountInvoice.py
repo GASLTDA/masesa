@@ -347,11 +347,11 @@ class AccountInvoice(models.Model):
                 LineaDetalle += '[NumeroLinea]' + str(total_lines) + '[|NumeroLinea]'
                 LineaDetalle += '[Codigo][Tipo]04[|Tipo][Codigo]' + str(
                     line.product_id.default_code or '000') + '[|Codigo][|Codigo]'
-                LineaDetalle += '[Cantidad]' + str('16.3F' % line.quantity) + '[|Cantidad]'
+                LineaDetalle += '[Cantidad]' + str('%16.3F' % line.quantity) + '[|Cantidad]'
                 LineaDetalle += '[UnidadMedida]' + str(line.uom_id.code or 'Unid') + '[|UnidadMedida]'
                 LineaDetalle += '[Detalle]' + str(line.name).strip('\n').replace('[','(').replace(']',')').replace('|','')[:160] + '[|Detalle]'
-                LineaDetalle += '[PrecioUnitario]' + str('23.5f' % line.price_unit) + '[|PrecioUnitario]'
-                LineaDetalle += '[MontoTotal]' + str('23.5f' % (line.quantity * line.price_unit)) + '[|MontoTotal]'
+                LineaDetalle += '[PrecioUnitario]' + str('%23.5f' % line.price_unit) + '[|PrecioUnitario]'
+                LineaDetalle += '[MontoTotal]' + str('%23.5f' % (line.quantity * line.price_unit)) + '[|MontoTotal]'
 
                 if line.discount > 0.0:
                     line_total_without_dis = 0.0
@@ -362,7 +362,7 @@ class AccountInvoice(models.Model):
                     nature_of_discount = ''
                     nature_of_discount = 'porcentaje'
                     LineaDetalle += '[NaturalezaDescuento]' + str(nature_of_discount) + '[|NaturalezaDescuento]'
-                LineaDetalle += '[SubTotal]' + str('23.5f' % line.price_subtotal) + '[|SubTotal]'
+                LineaDetalle += '[SubTotal]' + str('%23.5f' % line.price_subtotal) + '[|SubTotal]'
                 if line.invoice_line_tax_ids:
                     if line.price_total - line.price_subtotal > 0.0:
                         LineaDetalle += '[Impuesto]'
@@ -393,7 +393,7 @@ class AccountInvoice(models.Model):
 
                         LineaDetalle += '[|Impuesto]'
 
-                LineaDetalle += '[MontoTotalLinea]' + str('23.5f' % line.price_total) + '[|MontoTotalLinea]'
+                LineaDetalle += '[MontoTotalLinea]' + str('%23.5f' % line.price_total) + '[|MontoTotalLinea]'
                 LineaDetalle += '[|LineaDetalle]'
             DetalleServicio = LineaDetalle
             invoice_dict += '[DetalleServicio]' + DetalleServicio + '[|DetalleServicio]'
@@ -445,22 +445,22 @@ class AccountInvoice(models.Model):
 
             TotalVentaNeta = TotalVenta - TotalDescuentos
             ResumenFactura = '[ResumenFactura][CodigoMoneda]' + id.currency_id.name + '[|CodigoMoneda]'
-            ResumenFactura += '[TipoCambio]' + str('23.5f' % id.currency_id.rate) + '[|TipoCambio]'
-            ResumenFactura += '[TotalServGravados]' + str('23.5f' % TotalServGravados) + '[|TotalServGravados]'
-            ResumenFactura += '[TotalServExentos]' + str('23.5f' % TotalServExentos) + '[|TotalServExentos]'
+            ResumenFactura += '[TipoCambio]' + str('%23.5f' % id.currency_id.rate) + '[|TipoCambio]'
+            ResumenFactura += '[TotalServGravados]' + str('%23.5f' % TotalServGravados) + '[|TotalServGravados]'
+            ResumenFactura += '[TotalServExentos]' + str('%23.5f' % TotalServExentos) + '[|TotalServExentos]'
             ResumenFactura += '[TotalMercanciasGravadas]' + str(
                 '23.5f' % TotalMercanciasGravadas) + '[|TotalMercanciasGravadas]'
             ResumenFactura += '[TotalMercanciasExentas]' + str(
                 '23.5f' % TotalMercanciasExentas) + '[|TotalMercanciasExentas]'
-            ResumenFactura += '[TotalGravado]' + str('23.5f' % TotalGravado) + '[|TotalGravado]'
-            ResumenFactura += '[TotalExento]' + str('23.5f' % TotalExento) + '[|TotalExento]'
-            ResumenFactura += '[TotalVenta]' + str('23.5f' % TotalVenta) + '[|TotalVenta]'
-            ResumenFactura += '[TotalDescuentos]' + str('23.5f' % TotalDescuentos) + '[|TotalDescuentos]'
-            ResumenFactura += '[TotalVentaNeta]' + str('23.5f' % (TotalVentaNeta )) + '[|TotalVentaNeta]'
+            ResumenFactura += '[TotalGravado]' + str('%23.5f' % TotalGravado) + '[|TotalGravado]'
+            ResumenFactura += '[TotalExento]' + str('%23.5f' % TotalExento) + '[|TotalExento]'
+            ResumenFactura += '[TotalVenta]' + str('%23.5f' % TotalVenta) + '[|TotalVenta]'
+            ResumenFactura += '[TotalDescuentos]' + str('%23.5f' % TotalDescuentos) + '[|TotalDescuentos]'
+            ResumenFactura += '[TotalVentaNeta]' + str('%23.5f' % (TotalVentaNeta )) + '[|TotalVentaNeta]'
 
-            ResumenFactura += '[TotalImpuesto]' + str('23.5f' % TotalImpuesto) + '[|TotalImpuesto]'
+            ResumenFactura += '[TotalImpuesto]' + str('%23.5f' % TotalImpuesto) + '[|TotalImpuesto]'
 
-            ResumenFactura += '[TotalComprobante]' + str('23.5f' % (TotalVentaNeta + TotalImpuesto )) + '[|TotalComprobante]'
+            ResumenFactura += '[TotalComprobante]' + str('%23.5f' % (TotalVentaNeta + TotalImpuesto )) + '[|TotalComprobante]'
             ResumenFactura += '[|ResumenFactura]'
 
             invoice_dict += ResumenFactura
