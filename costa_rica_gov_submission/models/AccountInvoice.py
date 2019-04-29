@@ -295,7 +295,7 @@ class AccountInvoice(models.Model):
             invoice_dict += '[NumeroConsecutivo]' + NumeroConsecutivo + '[|NumeroConsecutivo]'
             invoice_dict += '[FechaEmision]' + FechaEmision[:25] + '[|FechaEmision]'
 
-            Emisor = '[Emisor][Nombre]' + id.company_id.name + '[|Nombre]'
+            Emisor = '[Emisor][Nombre]' + str(id.company_id.name).replace('&','and').replace('&amp;','and') + '[|Nombre]'
             Emisor += '[Identificacion][Tipo]' + id.company_id.partner_id.tipo + '[|Tipo][Numero]' + str(id.company_id.company_registry).replace('-','').replace(' ','') + '[|Numero][|Identificacion]'
             Emisor += '[Ubicacion]'
             Emisor += '[Provincia]' + self._get_string(id.company_id.province_id.code) + '[|Provincia]'
@@ -349,7 +349,7 @@ class AccountInvoice(models.Model):
                     line.product_id.default_code or '000') + '[|Codigo][|Codigo]'
                 LineaDetalle += '[Cantidad]' + str('%16.3F' % line.quantity) + '[|Cantidad]'
                 LineaDetalle += '[UnidadMedida]' + str(line.uom_id.code or 'Unid') + '[|UnidadMedida]'
-                LineaDetalle += '[Detalle]' + str(line.name).strip('\n').replace('[','(').replace(']',')').replace('|','')[:160] + '[|Detalle]'
+                LineaDetalle += '[Detalle]' + str(line.name).strip('\n').replace('[','(').replace(']',')').replace('|','').replace('&','and').replace('&amp;','and')[:160] + '[|Detalle]'
                 LineaDetalle += '[PrecioUnitario]' + str('%23.5f' % line.price_unit) + '[|PrecioUnitario]'
                 LineaDetalle += '[MontoTotal]' + str('%23.5f' % (line.quantity * line.price_unit)) + '[|MontoTotal]'
 
