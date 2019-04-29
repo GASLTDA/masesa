@@ -375,7 +375,7 @@ class AccountInvoice(models.Model):
                             product_amount_after_discount = product_amount - (
                                 product_amount * (line.discount / 100))
                             LineaDetalle += '[Monto]' + str(
-                                '23.5f' % (line.price_total - line.price_subtotal)) + '[|Monto]'
+                                '%23.5f' % (line.price_total - line.price_subtotal)) + '[|Monto]'
 
                             if tax_ids.tax_code in ('08', '09', '10', '11', '99'):
                                 LineaDetalle += '[Exoneracion]'
@@ -449,9 +449,9 @@ class AccountInvoice(models.Model):
             ResumenFactura += '[TotalServGravados]' + str('%23.5f' % TotalServGravados) + '[|TotalServGravados]'
             ResumenFactura += '[TotalServExentos]' + str('%23.5f' % TotalServExentos) + '[|TotalServExentos]'
             ResumenFactura += '[TotalMercanciasGravadas]' + str(
-                '23.5f' % TotalMercanciasGravadas) + '[|TotalMercanciasGravadas]'
+                '%23.5f' % TotalMercanciasGravadas) + '[|TotalMercanciasGravadas]'
             ResumenFactura += '[TotalMercanciasExentas]' + str(
-                '23.5f' % TotalMercanciasExentas) + '[|TotalMercanciasExentas]'
+                '%23.5f' % TotalMercanciasExentas) + '[|TotalMercanciasExentas]'
             ResumenFactura += '[TotalGravado]' + str('%23.5f' % TotalGravado) + '[|TotalGravado]'
             ResumenFactura += '[TotalExento]' + str('%23.5f' % TotalExento) + '[|TotalExento]'
             ResumenFactura += '[TotalVenta]' + str('%23.5f' % TotalVenta) + '[|TotalVenta]'
