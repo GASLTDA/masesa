@@ -2,8 +2,9 @@
 {
     'name': "Costa Rica Tipo de Cambio",
     'author': "Jimmy Cruz - jimmycruzv@gmail.com",
-    'summary': """ Módulo diseñado y creado por Jimmy Cruz 
-            para Global Account Systems LTDA""",
+    'summary': """
+        Actualiza el tipo de cambio de
+        venta automáticamente""",
 
     'description': """
         Este módulo consume el servicio web del 
@@ -13,10 +14,11 @@
     """,
     'website': "web-builds.com",
     'category': 'Currency',
-    'version': '1.1',
+    'version': '1.2',
     'depends': ['base','account'],
     'data': [
         'views/crc_currency_rate_view.xml',
+        'security/ir.model.access.csv',
         'data/cron.xml',
         'data/res_currency_update.xml',
     ],

@@ -39,5 +39,37 @@
     <menuitem id="crc_currency_rate_menu" action="currency_rate_action_window"
         parent="account.account_account_menu" sequence="0"/>
 
+    <!--  form to create a new envent-->
+    <record id="get_currency_rate_form" model="ir.ui.view">
+      <field name="name">Get Rates</field>
+      <field name="model">get.rates</field>
+      <field name="arch" type="xml">
+        <form >
+            <group name="main">
+              <group>
+                <field name="date_from"/>
+              </group>
+              <group>
+                <field name="date_to"/>
+              </group>
+
+            </group>
+          <footer>
+            <button type="object" class="btn-primary" string="Get Rates" name="get_rate"/>
+            <button string="Close" class="btn-default" special="cancel" />
+          </footer>
+        </form>
+      </field>
+    </record>
+    <!-- actions opening views on models -->
+    <record model="ir.actions.act_window" id="get_currency_rate_action_window">
+      <field name="name">Get Rate</field>
+      <field name="res_model">get.rates</field>
+      <field name="view_mode">form</field>
+      <field name="target">new</field>
+    </record>
+    <!-- Link to parent menu in invoicing -->
+    <menuitem id="crc_get_rate_menu" action="get_currency_rate_action_window"
+              parent="account.account_account_menu" sequence="0"/>
   </data>
 </odoo>

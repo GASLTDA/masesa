@@ -4,8 +4,7 @@ import datetime
 import logging
 import xml.etree.ElementTree as ET
 from odoo import models, fields, api
-from odoo.exceptions import UserError, ValidationError
-import subprocess
+
 
 _logger = logging.getLogger(__name__)
 
@@ -38,26 +37,29 @@ class crc_currency_rate(models.Model):
         for rec in self:
             try:
                 for child in root.iter('NUM_VALOR'):
-                    rec.rate = float(child.text)
+                    rec.rate = self.compute_rate(child.text)
                     rate_Model = rec.env['res.currency.rate']
-                    rate_name = rec.env['res.currency.rate'].search([('currency_id', '=', 40)], limit=1).name
-                    rate_id = rec.env['res.currency.rate'].search([('currency_id', '=', 40)], limit=1).id
+                    rate_name = rec.env['res.currency.rate'].search([('currency_id', '=', self.compute_curr())], limit=1).name
+                    rate_id = rec.env['res.currency.rate'].search([('currency_id', '=', self.compute_curr())], limit=1).id
                     #rate_date = f"{datetime.datetime.now():%Y-%m-%d}"
                     rate_date = self.i.strftime("%Y-%m-%d")
-                    sql_param_rate = float(child.text)
-                    if rate_date == rate_name : 
-                        rec.env.cr.execute("UPDATE res_currency_rate SET rate = %s WHERE id = %s;",(sql_param_rate,rate_id))
-                        _logger.info('Moneda CRC actualizada, botón actualizar, método write, valor: %s', sql_param_rate)
-                        #_logger.info('Botón actualizar presionado query: UPDATE res_currency_rate SET rate = %s WHERE id = %s;',sql_param_rate,rate_id)
+                    sql_param_rate = self.compute_rate(child.text)
+                    company_ids = self.env['res.company'].sudo().search([])
+                    if rate_date == rate_name :
+                        for company in company_ids:
+                            rec.env.cr.execute("UPDATE res_currency_rate SET rate = %s WHERE id = %s and company_id = %s;",(sql_param_rate,rate_id, company.id))
+                            _logger.info('Botón actualizar presionado query: UPDATE res_currency_rate SET rate = %s WHERE id = %s;',sql_param_rate,rate_id)
                         break
-                    else:  
-                        vals = {
-                            'currency_id': 40,
-                            'rate': float(child.text),
-                            'name': str(rec.i.year) +"-"+str(rec.i.month)+"-"+str(rec.i.day),
-                            'company_id': 1,
-                        }
-                        rate_Model.create(vals)
+                    else:
+
+                        for company in company_ids:
+                            vals = {
+                                'currency_id': self.compute_curr(),
+                                'rate': self.compute_rate(child.text),
+                                'name': str(rec.i.year) +"-"+str(rec.i.month)+"-"+str(rec.i.day),
+                                'company_id': company.id,
+                            }
+                            rate_Model.create(vals)
             except Exception as exc:
                 _logger.error(repr(exc))
         return True
@@ -71,49 +73,121 @@ class crc_currency_rate(models.Model):
     @api.model
     def _cron_update_CRC_Rate(self):
         _logger.info('Iniciando cron task')
+
         self._update_crc()
         _logger.info('Finalizando cron task')
         
     # function for the scheduled task
     @api.multi
     def _update_crc(self):
+
         req = requests.get(self.url)
         root = ET.fromstring(req.text)
         for child in root.iter('NUM_VALOR'):
             rate_Model = self.env['res.currency.rate']
-            rate_name = self.env['res.currency.rate'].search([('currency_id', '=', 40)], limit=1).name
-            rate_id = self.env['res.currency.rate'].search([('currency_id', '=', 40)], limit=1).id
-            #rate_date = f"{datetime.datetime.now():%Y-%m-%d}"
-            rate_date = self.i.strftime("%Y-%m-%d")
-            sql_param_rate = float(child.text)
+            company_ids = self.env['res.company'].sudo().search([])
+            for company in company_ids:
+                rate_name = self.env['res.currency.rate'].search([('currency_id', '=', self.compute_curr(company))], limit=1).name
+                rate_id = self.env['res.currency.rate'].search([('currency_id', '=', self.compute_curr(company))], limit=1).id
+                #rate_date = f"{datetime.datetime.now():%Y-%m-%d}"
 
-            if rate_date == rate_name : 
-                self.env.cr.execute("UPDATE res_currency_rate SET rate = %s WHERE id = %s;",(sql_param_rate,rate_id))
+                rate_date = self.i.strftime("%Y-%m-%d")
+                sql_param_rate = self.compute_rate(child.text, company)
 
-                _logger.info('Moneda CRC actualizada, método write, valor: %s', float(child.text))
 
-                vals ={
-                    'name' : self.i.strftime("%Y-%m-%d %H:%M:%S"),
-                    'rate' : float(child.text)
-                }
-                self.create(vals)
-                break
-            else:  
-                vals = {
-                    'currency_id': 40,
-                    'rate': float(child.text),
-                    'name': str(self.i.year) +"-"+str(self.i.month)+"-"+str(self.i.day),
-                    'company_id': 1,
-                }
-                rate_Model.create(vals)
+                if rate_date == rate_name :
 
-                _logger.info('Moneda CRC actualizada método crear, valor: %s',sql_param_rate)
-                # vals2 ={
-                #     'name' : f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S}",
-                #     'rate' : float(child.text)
-                # }
-                vals2 ={
-                    'name' : self.i.strftime("%Y-%m-%d %H:%M:%S"),
-                    'rate' : float(child.text)
-                }
-                self.create(vals2)
+                    self.env.cr.execute("UPDATE res_currency_rate SET rate = %s WHERE id = %s and company_id = %s;",(sql_param_rate,rate_id, company.id))
+
+                    # _logger.info('Moneda CRC actualizada, método write, valor: %s', self.compute_rate(child.text))
+
+                    vals ={
+                        'name' : self.i.strftime("%Y-%m-%d %H:%M:%S"),
+                        'rate' : self.compute_rate(child.text, company)
+                    }
+                    self.create(vals)
+                    break
+                else:
+                    vals = {
+                            'currency_id': self.compute_curr(company),
+                            'rate': self.compute_rate(child.text, company),
+                            'name': str(self.i.year) +"-"+str(self.i.month)+"-"+str(self.i.day),
+                            'company_id': company.id,
+                        }
+                    try:
+                        rate_Model.create(vals)
+                    # vals2 ={
+                    #     'name' : f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S}",
+                    #     'rate' : self.compute_rate(child.text)
+                    # }
+                        vals2 ={
+                            'name' : self.i.strftime("%Y-%m-%d %H:%M:%S"),
+                            'rate' : self.compute_rate(child.text, company)
+                        }
+                        self.create(vals2)
+                    except:
+                        _logger.info('Moneda CRC actualizada método crear, valor: %s',sql_param_rate)
+
+    @api.multi
+    def _update_crc_manual(self,date):
+        url = "http://indicadoreseconomicos.bccr.fi.cr/indicadoreseconomicos/WebServices/wsIndicadoresEconomicos.asmx/ObtenerIndicadoresEconomicos?tcIndicador=318&tcFechaInicio="+str(date.day)+"/"+str(date.month)+"/"+str(date.year)+"&tcFechaFinal="+str(date.day)+"/"+str(date.month)+"/"+str(date.year)+"&tcNombre=Odoo&tnSubNiveles=S"
+        print(url)
+        req = requests.get(url)
+        root = ET.fromstring(req.text)
+        for child in root.iter('NUM_VALOR'):
+            rate_Model = self.env['res.currency.rate']
+            company_ids = self.env['res.company'].sudo().search([])
+            for company in company_ids:
+                rate_name = self.env['res.currency.rate'].search([('currency_id', '=', self.compute_curr(company))], limit=1).name
+                rate_id = self.env['res.currency.rate'].search([('currency_id', '=', self.compute_curr(company))], limit=1).id
+                #rate_date = f"{datetime.datetime.now():%Y-%m-%d}"
+
+                rate_date = date
+                sql_param_rate = self.compute_rate(child.text, company)
+
+
+                if rate_date == rate_name :
+
+                    self.env.cr.execute("UPDATE res_currency_rate SET rate = %s WHERE id = %s and company_id = %s;",(sql_param_rate,rate_id, company.id))
+
+                    # _logger.info('Moneda CRC actualizada, método write, valor: %s', self.compute_rate(child.text))
+
+                    vals ={
+                        'name' : date + ' 00:00:01',
+                        'rate' : self.compute_rate(child.text, company)
+                    }
+                    self.create(vals)
+                    break
+                else:
+                    vals = {
+                            'currency_id': self.compute_curr(company),
+                            'rate': self.compute_rate(child.text, company),
+                            'name': str(date.year) +"-"+str(date.month)+"-"+str(date.day),
+                            'company_id': company.id,
+                        }
+                    try:
+                        rate_Model.create(vals)
+                    # vals2 ={
+                    #     'name' : f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S}",
+                    #     'rate' : self.compute_rate(child.text)
+                    # }
+                        vals2 ={
+                            'name' : date + ' 00:00:01',
+                            'rate' : self.compute_rate(child.text, company)
+                        }
+                        self.create(vals2)
+                    except:
+                        _logger.info('Moneda CRC actualizada método crear, valor: %s',sql_param_rate)
+                self._cr.commit()
+
+    def compute_curr(self,company):
+        if company.currency_id.id == 40:
+            return 3
+        else:
+            return 40
+
+    def compute_rate(self, rate,company):
+        if self.compute_curr(company) == 40:
+            return float(rate)
+        else:
+            return float(1/float(rate))
